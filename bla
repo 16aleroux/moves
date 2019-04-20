@@ -1,0 +1,58 @@
+T = 20               # final time
+dt = 0.01                # timesteps 
+np = 50                 # number of particles (equivalent to the samples previously)
+nt = ceil(Int, T/dt)
+
+# parameters of the model
+lambda = 1
+beta = 0.5 # 20       - for small beta, the particles self-organise
+
+# store position, speed and gradient of U
+x1 = zeros(nt,np)
+x2 = zeros(nt,np)
+v1 = zeros(nt,np)
+v2 = zeros(nt,np)
+
+x1[1,:] = 5*rand(np) + 0.5*randn(np)
+x2[1,:] = 5*rand(np) + 0.5*randn(np)
+
+v1[1,:] = 0.5*rand(np)
+v2[1,:] = 0.5*rand(np)
+
+# function to evaluate Psi
+
+function Psi(x1,x2,v1,v2,beta,k,np)
+    A = zeros(2,np);
+    for i = 1:np
+        for j = 1:np
+            if i != j
+                d = (x1[k,i]-x1[k,j])^2 +(x2[k,i]-x2[k,j])^2
+                A[1,i] = A[1,i] + 1/(1+d)^beta*(v1[k,j]-v1[k,i]); 
+                A[2,i] = A[2,i] + 1/(1+d)^beta*(v2[k,j]-v2[k,i]); 
+            end
+        end
+    end
+    return A
+end
+
+# time step
+for k = 1:nt-1
+    x1[k+1,:] = x1[k,:] + v1[k,:]*dt
+    x2[k+1,:] = x2[k,:] + v2[k,:]*dt
+    
+    P = Psi(x1,x2,v1,v2,beta,k,np)
+    v1[k+1,:] = v1[k,:] + dt*(P[1,:])
+    v2[k+1,:] = v2[k,:] + dt*(P[2,:])
+end
+ plot out np particles
+np=50
+animation = @animate for k=10:nt 
+    p1 = quiver(x1[k,1:np],x2[k,1:np], quiver = (v1[k,1:np],v2[k,1:np]),
+             title="time=$(round(dt*k,1))",
+              legend=false, size=(500, 500), 
+              xlim=[0,10],ylim=[0,10] )
+    scatter!(p1, x1[k,1:np],x2[k,1:np])
+end
+
+
+gif(animation,"CS20.gif", fps=20)
